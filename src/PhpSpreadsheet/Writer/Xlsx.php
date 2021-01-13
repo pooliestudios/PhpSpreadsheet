@@ -4,8 +4,8 @@ namespace PhpOffice\PhpSpreadsheet\Writer;
 
 use PhpOffice\PhpSpreadsheet\Calculation\Calculation;
 use PhpOffice\PhpSpreadsheet\Calculation\Functions;
+use PhpOffice\PhpSpreadsheet\Cell\Hyperlink;
 use PhpOffice\PhpSpreadsheet\HashTable;
-use PhpOffice\PhpSpreadsheet\Shared\File;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Worksheet\Drawing as WorksheetDrawing;
 use PhpOffice\PhpSpreadsheet\Worksheet\MemoryDrawing;
@@ -365,6 +365,11 @@ class Xlsx extends BaseWriter
 
         // Add media
         for ($i = 0; $i < $this->getDrawingHashTable()->count(); ++$i) {
+            if ($this->getDrawingHashTable()->getByIndex($i)->getHyperlink() instanceof Hyperlink) {
+                //Just continue. This drawing is a remote image. There is nothing to add.
+                continue;
+            }
+
             if ($this->getDrawingHashTable()->getByIndex($i) instanceof WorksheetDrawing) {
                 $imageContents = null;
                 $imagePath = $this->getDrawingHashTable()->getByIndex($i)->getPath();

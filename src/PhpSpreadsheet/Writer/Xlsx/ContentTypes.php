@@ -2,6 +2,7 @@
 
 namespace PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
+use PhpOffice\PhpSpreadsheet\Cell\Hyperlink;
 use PhpOffice\PhpSpreadsheet\Shared\File;
 use PhpOffice\PhpSpreadsheet\Shared\XMLWriter;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -118,6 +119,11 @@ class ContentTypes extends WriterPart
         $aMediaContentTypes = [];
         $mediaCount = $this->getParentWriter()->getDrawingHashTable()->count();
         for ($i = 0; $i < $mediaCount; ++$i) {
+            if ($this->getParentWriter()->getDrawingHashTable()->getByIndex($i)->getHyperlink() instanceof Hyperlink) {
+                //Just continue. This drawing is a remote image. There is no content type.
+                continue;
+            }
+
             $extension = '';
             $mimeType = '';
 

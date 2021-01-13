@@ -1090,7 +1090,11 @@ class Xlsx extends BaseReader
                                                     $hyperlinks[(string) $ele['Id']] = (string) $ele['Target'];
                                                 }
                                                 if ($ele['Type'] == 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/image') {
-                                                    $images[(string) $ele['Id']] = self::dirAdd($fileDrawing, $ele['Target']);
+                                                    if ((string) $ele['TargetMode'] === 'External') {
+                                                        $hyperlinks[(string) $ele['Id']] = (string) $ele['Target'];
+                                                    } else {
+                                                        $images[(string) $ele['Id']] = self::dirAdd($fileDrawing, (string) $ele['Target']);
+                                                    }
                                                 } elseif ($ele['Type'] == 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart') {
                                                     if ($this->includeCharts) {
                                                         $charts[self::dirAdd($fileDrawing, $ele['Target'])] = [
@@ -1123,14 +1127,15 @@ class Xlsx extends BaseReader
                                                     $objDrawing = new \PhpOffice\PhpSpreadsheet\Worksheet\Drawing();
                                                     $objDrawing->setName((string) self::getArrayItem($oneCellAnchor->pic->nvPicPr->cNvPr->attributes(), 'name'));
                                                     $objDrawing->setDescription((string) self::getArrayItem($oneCellAnchor->pic->nvPicPr->cNvPr->attributes(), 'descr'));
-                                                    $objDrawing->setPath(
-                                                        'zip://' . File::realpath($pFilename) . '#' .
-                                                        $images[(string) self::getArrayItem(
-                                                            $blip->attributes('http://schemas.openxmlformats.org/officeDocument/2006/relationships'),
-                                                            'embed'
-                                                        )],
-                                                        false
-                                                    );
+
+                                                    $embedRelId = (string) self::getArrayItem($blip->attributes('http://schemas.openxmlformats.org/officeDocument/2006/relationships'), 'embed');
+                                                    $linkRelId = (string) self::getArrayItem($blip->attributes('http://schemas.openxmlformats.org/officeDocument/2006/relationships'), 'link');
+                                                    if (!empty($embedRelId)) {
+                                                        $objDrawing->setPath('zip://' . File::realpath($pFilename) . '#' . $images[$embedRelId], false);
+                                                    } elseif (!empty($linkRelId)) {
+                                                        $objDrawing->setHyperlink(new Hyperlink($hyperlinks[$linkRelId]));
+                                                    }
+
                                                     $objDrawing->setCoordinates(Coordinate::stringFromColumnIndex(((string) $oneCellAnchor->from->col) + 1) . ($oneCellAnchor->from->row + 1));
                                                     $objDrawing->setOffsetX(Drawing::EMUToPixels($oneCellAnchor->from->colOff));
                                                     $objDrawing->setOffsetY(Drawing::EMUToPixels($oneCellAnchor->from->rowOff));
